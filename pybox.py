@@ -6,7 +6,7 @@ import pygame, sys
 from pygame.locals import *
 
 
-res = (640, 480) # resolution
+res = (1366, 768) # resolution
 
 pygame.init()
 fpsClock = pygame.time.Clock()
@@ -22,12 +22,14 @@ black = pygame.Color(0,0,0)
 
 mousex, mousey = 0, 0
 
-fontObj = pygame.font.Font('freesansbold.ttf', 32)
+fontObj = pygame.font.Font('freesansbold.ttf', 16)
 msg = 'Hello pygame!'
 
 coords1 = (60, 160)
 coords2 = (120, 60)
 thick = 4
+
+scrollSpeed = 3
 
 # main program loop
 while True:
@@ -37,6 +39,10 @@ while True:
     
     pygame.draw.line(windowSurfObj, blue, (mousex, mousey), coords2, thick)
     
+    msgSurfObj = fontObj.render(msg, False, black)
+    msgRectObj = msgSurfObj.get_rect()
+    msgRectObj.topleft = (res[0]/4,20)
+    windowSurfObj.blit(msgSurfObj, msgRectObj)
 
     # process input
     for event in pygame.event.get():
@@ -49,11 +55,17 @@ while True:
         elif event.type == MOUSEBUTTONUP:
             mousex, mousey = event.pos
             if event.button == 1:
-                pass
+                msg = 'left click'
             elif event.button == 2:
-                pass
+                msg = 'middle click'
             elif event.button == 3:
-                pass
+                msg = 'right click'
+            elif event.button == 4:
+                msg = 'scroll up'
+                coords2 = (coords2[0], coords2[1] - scrollSpeed)
+            elif event.button == 5:
+                msg = 'scroll down'
+                coords2 = (coords2[0], coords2[1] + scrollSpeed)
                 
         elif event.type == KEYDOWN:
             if event.key == K_ESCAPE:
