@@ -1,6 +1,26 @@
-# pybox.py - Sandbox for pygame testing
-# nitor
-# Jun 2014
+# pybox.py - "briks" brick breaking game implemented with and dependent upon pygame library
+# Author: nitor
+# Date: Jun 2014
+#
+#########################
+#
+# MIT/Expat License
+#
+# Copyright (C) 2014 K. Brett Mulligan
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+#
+#########################
+#
+# Additional Credits:
+# Sound by popup pixels / soundbible.com
+#  - License: CC Attribution 3.0
+#
+#########################
 
 import pygame, sys, math
 from pygame.locals import *
@@ -8,6 +28,7 @@ from pygame.locals import *
 # main program config
 debug = False
 paused = True
+mute = False
 res = (1000, 600) # resolution
 borderWidth = 10
 bottomPad = 2
@@ -84,6 +105,8 @@ class Ball:
 
     x = 50
     y = 50
+
+    snd = None
     
     def __init__ (self, nx, ny):
         self.x = nx
@@ -117,6 +140,12 @@ class Ball:
             self.velX *= -1
         else:
             pass
+
+        if self.snd != None and not mute:
+            self.snd.play()
+
+    def setSound(self, sound):
+        self.snd = sound
         
 
 class Paddle:
@@ -207,6 +236,11 @@ label = 'Status: '
 msg = 'Program started...'
 title = 'brik'
 
+# sound
+sndBounce = pygame.mixer.Sound("sound/bounce-soft-short.wav")
+
+
+# top level game state
 game = Game()
 game.setLevel(1)
 player = Player(0,1)
@@ -214,6 +248,7 @@ paddle = Paddle()
 
 mainBall = Ball(paddle.x + paddle.size/2, paddle.y - Ball.size)
 mainBall.setVelocity(3,3)
+mainBall.setSound(sndBounce)
 
 # setup bricks
 bricks = []
@@ -230,7 +265,7 @@ setupBricks()
 
 # input section
 def processInput():
-    global paused, msg, attached, paddle, debug
+    global paused, mute, msg, attached, paddle, debug
     
     for event in pygame.event.get():
         if event.type == QUIT:
@@ -261,6 +296,8 @@ def processInput():
                 nextLevel()
             elif event.key == K_d:
                 debug = not debug
+            elif event.key == K_m or event.key == K_s:
+                mute = not mute
             elif event.key == K_SPACE:
                 togglePause()
 
