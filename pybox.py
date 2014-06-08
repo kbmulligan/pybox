@@ -6,9 +6,9 @@ import pygame, sys, math
 from pygame.locals import *
 
 # main program config
-debug = True
+debug = False
 paused = True
-res = (1200, 600) # resolution
+res = (1000, 600) # resolution
 borderWidth = 10
 bottomPad = 2
 fps = 60
@@ -24,7 +24,6 @@ brickVertOffset = 100
 startingPoints = 0
 startingLives = 5
 
-mousex, mousey = 0, 0
 
 # color presets
 red = pygame.Color(255,0,0)
@@ -128,12 +127,13 @@ class Paddle:
     size = 80
     width = 15
     mass = 1
+    notch = 5
 
     x = res[0]/2 - size/2
     y = res[1] - 70
 
-    velX = 0
-    velY = 0
+    velX = 5
+    velY = 5
 
     def update(self):
         self.x += self.velX
@@ -154,7 +154,7 @@ class Brick:
         self.x = nx
         self.y = ny
     
-    size = 80
+    size = 90
     width = 15
     mass = 1
     borderColor = white
@@ -198,13 +198,14 @@ pygame.init()
 fpsClock = pygame.time.Clock()
 
 windowSurfObj = pygame.display.set_mode(res)
-pygame.display.set_caption('pybox')
+pygame.display.set_caption('brik')
 
 
 fontSize = 24
 fontObj = pygame.font.Font(None, fontSize)
 label = 'Status: '
-msg = 'brik'
+msg = 'Program started...'
+title = 'brik'
 
 game = Game()
 game.setLevel(1)
@@ -219,17 +220,17 @@ bricks = []
 
 def setupBricks():
     global bricks
-    for j in range(brickCols):
-       for i in range(brickRows):
-            bricks.append(Brick(res[0]/2 - (Brick.size*brickCols + brickPadding*(brickCols-1))/2 + j*(brickPadding + Brick.size), brickVertOffset + i*Brick.width + i*brickPadding))
 
+    for i in range(brickRows + game.getLevel()):
+        for j in range(brickCols):
+               bricks.append(Brick(res[0]/2 - (Brick.size*brickCols + brickPadding*(brickCols-1))/2 + j*(brickPadding + Brick.size), brickVertOffset + i*Brick.width + i*brickPadding))
 
 setupBricks()
 
 
 # input section
 def processInput():
-    global paused, msg, mousex, mousey, attached, paddle, debug
+    global paused, msg, attached, paddle, debug
     
     for event in pygame.event.get():
         if event.type == QUIT:
@@ -264,17 +265,19 @@ def processInput():
                 togglePause()
 
 def pollInputs():
-    global coords2
+    global paddle
 
     keys = pygame.key.get_pressed()
     if keys[K_LEFT]:
-        coords2 = (coords2[0] - scrollSpeed, coords2[1])
+        if not paused:
+            paddle.setPos(paddle.x - paddle.velX, paddle.y)
     elif keys[K_RIGHT]:
-        coords2 = (coords2[0] + scrollSpeed, coords2[1])
+        if not paused:
+            paddle.setPos(paddle.x + paddle.velX, paddle.y)
     if keys[K_UP]:
-        coords2 = (coords2[0], coords2[1] - scrollSpeed)
+        pass
     elif keys[K_DOWN]:
-        coords2 = (coords2[0], coords2[1] + scrollSpeed)
+        pass
 
 def leftClick():
     global msg, attached
@@ -292,12 +295,14 @@ def middleClick():
 def scrollUp():
     global msg, mainBall
     msg = 'scroll up'
-    mainBall.setVelocity(1.1*mainBall.velX, 1.1*mainBall.velY)
+    if debug:
+        mainBall.setVelocity(1.1*mainBall.velX, 1.1*mainBall.velY)
     
 def scrollDown():
     global msg, mainBall
     msg = 'scroll down'
-    mainBall.setVelocity(0.9*mainBall.velX, 0.9*mainBall.velY)
+    if debug:
+        mainBall.setVelocity(0.9*mainBall.velX, 0.9*mainBall.velY)
 
 def togglePause():
     global paused
@@ -318,8 +323,9 @@ def draw():
     pygame.draw.circle(windowSurfObj, white, mainBall.getPos(), mainBall.size)
 
     # draw paddle
-    pygame.draw.rect(windowSurfObj, green, (paddle.x, paddle.y, paddle.size, paddle.width))
-
+    pygame.draw.rect(windowSurfObj, green, (paddle.x, paddle.y, paddle.size, paddle.width - paddle.notch))
+    pygame.draw.rect(windowSurfObj, green, (paddle.x + paddle.notch, paddle.y, paddle.size - 2*paddle.notch, paddle.width))
+    
     # draw bricks
     for brick in bricks:
         pygame.draw.rect(windowSurfObj, brick.fillColor, (int(brick.x), int(brick.y), brick.size, brick.width))
@@ -328,11 +334,13 @@ def draw():
     # debug status
     if debug:
         drawText(windowSurfObj, label + msg, (10, res[1] - (fontSize)))
-        drawText(windowSurfObj, 'Speed: ' + str(abs(mainBall.velX) + abs(mainBall.velY)), (res[0]/2, res[1] - (fontSize)))
-
+        drawText(windowSurfObj, 'Speed: ' + str(abs(mainBall.velX) + abs(mainBall.velY)), (res[0]/3, res[1] - (fontSize)))
+    else:
+        drawText(windowSurfObj, 'Lives: ' + str(player.getLives()), (borderWidth, res[1] - (fontSize)))
+        
     # stats
-    drawText(windowSurfObj, 'Score: ' + str(player.getPoints()), (res[0]*3/4 , res[1] - (fontSize)))
-    drawText(windowSurfObj, 'Level: ' + str(game.getLevel()), (res[0]*7/8 , res[1] - (fontSize)))
+    drawText(windowSurfObj, 'Score: ' + str(player.getPoints()), (res[0]*3/5 , res[1] - (fontSize)))
+    drawText(windowSurfObj, 'Level: ' + str(game.getLevel()), (res[0]*4/5 , res[1] - (fontSize)))
 
 
 def drawBackground():
@@ -424,7 +432,11 @@ def brickBallCollision(ball, brick):
 
 def outOfBounds():
     global mainBall
-    mainBall.setPos(res[0]/2, res[1]/2)
+    player.takeLife()
+    if not paused:
+        togglePause()
+    resetPaddle()
+    resetBall()
 
 def checkGame():
 
@@ -432,16 +444,6 @@ def checkGame():
         nextLevel()
     if player.getLives() <= 0:
         resetGame()
-
-
-def nextLevel():
-    global game
-    game.setLevel(game.getLevel() + 1)
-    setupBricks()
-    if not paused:
-        togglePause()
-    resetPaddle()
-    resetBall()
 
 def resetPaddle():
     global paddle
@@ -451,14 +453,29 @@ def resetBall():
     global mainBall
     mainBall.setPos(paddle.x + paddle.size/2, paddle.y - Ball.size)
     mainBall.setVelocity(3,3)
+    
+def nextLevel():
+    global game
+
+    game.setLevel(game.getLevel() + 1)
+    setupBricks()
+
+    if not paused:
+        togglePause()
+    resetPaddle()
+    resetBall()
 
 def resetGame():
     global game, player
+
     game.setLevel(1)
     setupBricks()
-    togglePause()
+
+    if not paused:
+        togglePause()
     resetPaddle()
     resetBall()
+    
     player.setPoints(startingPoints)
     player.setLives(startingLives)
 
